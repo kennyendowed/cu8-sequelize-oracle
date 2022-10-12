@@ -64,3 +64,55 @@ Hey! I'm Nhua Nhua, who came from Mars. Wish you have a nice day and feel comfor
     DATEONLY (=DATETIME)
     BOOLEAN (=NUMBER(1))
     TEXT (=CLOB)
+
+
+### Cannot read property getConnection ###
+* Open your node.js project folder.
+* Go to ./node_modules/cu8-sequelize-oracle/lib/dialects/abstract connection-manager.js
+* Replace the ConnectionManager.prototype.getConnection function to this code
+
+ConnectionManager.prototype.getConnection = function(options) {
+    var self = this;
+    options = options || {};
+    var count = 1;
+    // this.pool._logStats();
+    
+    function checkIfPoolDefined(callback) {
+     try {
+             if(self.pool) {
+            { callback() }
+        }
+        else {
+            console.log("Waiting for pool..."+count++)
+            setTimeout(function() {
+                checkIfPoolDefined(callback);
+            }, 250);
+        }
+     } catch (error) {
+        console.log(error)
+        setTimeout(function() {
+            checkIfPoolDefined(callback);
+        }, 250);
+     }
+    }
+
+    return new Promise(function(resolve, reject) {
+      try {
+        checkIfPoolDefined(function() {
+            self.pool.getConnection((err, connection) => {
+                console.log('Starting to establish a connection. . . . . ');
+                if (err) {
+                   reject(err);
+                    return;
+                }
+                console.log('Connection was successful!');
+                    resolve(connection);
+            });
+
+        })
+      } catch (error) {
+        console.log(error)
+      }
+    })
+    //.timeout(1980, 'Error: timeout of 2000ms exceeded. Check your configuration and your database.');
+};
